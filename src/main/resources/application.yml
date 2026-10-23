@@ -1,0 +1,28 @@
+server:
+  port: ${PORT:8080}
+spring:
+  application:
+    name: nimbus-temperature-excursion
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/nimbus_freight?createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+nimbus:
+  temperature:
+    default-threshold-celsius: 8.0
+    warning-duration-minutes: 15
+    recovery-duration-minutes: 10
+    data-gap-minutes: 10

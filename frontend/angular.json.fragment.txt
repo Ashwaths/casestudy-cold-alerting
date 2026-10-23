@@ -1,0 +1,1 @@
+Angular CLI generates angular.json and package.json. Use `ng new nimbus-dashboard --standalone --routing --style=css`, then copy the files in this folder into the generated project.
