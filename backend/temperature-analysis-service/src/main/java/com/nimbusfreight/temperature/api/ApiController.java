@@ -3,11 +3,11 @@ package com.nimbusfreight.temperature.api;
 import com.nimbusfreight.temperature.model.*;
 import com.nimbusfreight.temperature.repo.*;
 import com.nimbusfreight.temperature.service.SensorIngestionService;
+import com.nimbusfreight.temperature.service.TruckManagementService;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
@@ -15,15 +15,45 @@ import java.util.*;
 @RequestMapping("/api/v1")
 public class ApiController {
     private final SensorIngestionService ingestion;
-    private final TruckRepository trucks;
     private final IncidentRepository incidents;
     private final AlertHistoryRepository alerts;
     private final ConfigurationRepository configs;
-    private final SensorReadingRepository readings;
+    private final TruckManagementService truckManagement;
 
-    public ApiController(SensorIngestionService ingestion, TruckRepository trucks, IncidentRepository incidents,
-                         AlertHistoryRepository alerts, ConfigurationRepository configs, SensorReadingRepository readings) {
-        this.ingestion=ingestion; this.trucks=trucks; this.incidents=incidents; this.alerts=alerts; this.configs=configs; this.readings=readings;
+    public ApiController(SensorIngestionService ingestion, IncidentRepository incidents,
+                         AlertHistoryRepository alerts, ConfigurationRepository configs,
+                         TruckManagementService truckManagement) {
+        this.ingestion=ingestion; this.incidents=incidents; this.alerts=alerts; this.configs=configs;
+        this.truckManagement=truckManagement;
+    }
+
+    @GetMapping("/trucks")
+    public List<TruckStatusResponse> trucks() { return truckManagement.list(); }
+
+    @PostMapping("/trucks")
+    public ResponseEntity<TruckStatusResponse> createTruck(@Valid @RequestBody TruckRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(truckManagement.create(request));
+    }
+
+    @PutMapping("/trucks/{truckId}")
+    public TruckStatusResponse updateTruck(@PathVariable String truckId, @Valid @RequestBody TruckRequest request) {
+        return truckManagement.update(truckId, request);
+    }
+
+    @PostMapping("/trucks/{truckId}/archive")
+    public TruckStatusResponse archiveTruck(@PathVariable String truckId) {
+        return truckManagement.archive(truckId);
+    }
+
+    @PostMapping("/trucks/{truckId}/activate")
+    public TruckStatusResponse activateTruck(@PathVariable String truckId) {
+        return truckManagement.activate(truckId);
+    }
+
+    @DeleteMapping("/trucks/{truckId}")
+    public ResponseEntity<Void> permanentlyDeleteTruck(@PathVariable String truckId) {
+        truckManagement.permanentlyDelete(truckId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/sensors/readings")
@@ -32,21 +62,7 @@ public class ApiController {
     }
 
     @GetMapping("/trucks/{truckId}/status")
-    public Map<String,Object> truckStatus(@PathVariable String truckId) {
-        Truck truck = trucks.findById(truckId).orElseThrow(() -> new IllegalArgumentException("Unknown truckId: " + truckId));
-        List<SensorReading> rs = readings.findByTruckTruckIdOrderByTimestampAsc(truckId);
-        SensorReading latest = rs.stream().max(Comparator.comparing(SensorReading::getTimestamp)).orElse(null);
-        Optional<Incident> open = incidents.findFirstByTruckTruckIdAndStatusOrderByStartTimeDesc(truckId, "ACTIVE");
-        Map<String,Object> result = new LinkedHashMap<>();
-        result.put("truckId", truck.getTruckId()); result.put("registrationNumber", truck.getRegistrationNumber());
-        result.put("customerName", truck.getCustomerName()); result.put("truckStatus", truck.getStatus());
-        result.put("latestTemperature", latest == null ? null : latest.getTemperature());
-        result.put("latestReadingAt", latest == null ? null : latest.getTimestamp());
-        result.put("telemetryState", latest == null ? "NO_DATA" :
-            Duration.between(latest.getTimestamp(), Instant.now()).toMinutes() > 10 ? "STALE" : "CURRENT");
-        result.put("incidentStatus", open.map(Incident::getStatus).orElse("NORMAL"));
-        return result;
-    }
+    public TruckStatusResponse truckStatus(@PathVariable String truckId) { return truckManagement.status(truckId); }
 
     @GetMapping("/incidents/active")
     public List<Incident> activeIncidents() { return incidents.findByStatusOrderByStartTimeDesc("ACTIVE"); }

@@ -24,4 +24,8 @@ public class Truck {
     public String getStatus() { return status; }
     public String getCustomerName() { return customerName; }
     public void setStatus(String status) { this.status = status; }
+    public void updateDetails(String registrationNumber, String customerName) {
+        this.registrationNumber = registrationNumber;
+        this.customerName = customerName;
+    }
 }

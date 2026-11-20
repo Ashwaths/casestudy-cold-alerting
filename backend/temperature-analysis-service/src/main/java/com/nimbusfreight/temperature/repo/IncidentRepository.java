@@ -12,4 +12,5 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     Optional<Incident> findByIncidentId(Long incidentId);
 
     Optional<Incident> findFirstByTruckTruckIdAndStatusOrderByStartTimeDesc(String truckId, String status);
+    List<Incident> findAllByTruckTruckId(String truckId);
 }

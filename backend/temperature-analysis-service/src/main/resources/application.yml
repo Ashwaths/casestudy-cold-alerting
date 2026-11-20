@@ -28,14 +28,33 @@ spring:
     operator:
       username: ${APP_USERNAME}
       password: ${APP_PASSWORD}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:25}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
 management:
+  health:
+    mail:
+      enabled: ${ALERT_EMAIL_ENABLED:false}
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
 nimbus:
   temperature:
     default-threshold-celsius: 8.0
     warning-duration-minutes: 15
     recovery-duration-minutes: 10
     data-gap-minutes: 10
+  alerts:
+    email:
+      enabled: ${ALERT_EMAIL_ENABLED:false}
+      to: ${ALERT_EMAIL_TO:}
+      from: ${ALERT_EMAIL_FROM:}
+    webhook:
+      url: ${ALERT_WEBHOOK_URL:}
+      bearer-token: ${ALERT_WEBHOOK_BEARER_TOKEN:}

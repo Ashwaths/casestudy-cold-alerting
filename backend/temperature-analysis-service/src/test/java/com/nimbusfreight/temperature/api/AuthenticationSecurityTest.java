@@ -21,6 +21,7 @@ import com.nimbusfreight.temperature.repo.IncidentRepository;
 import com.nimbusfreight.temperature.repo.SensorReadingRepository;
 import com.nimbusfreight.temperature.repo.TruckRepository;
 import com.nimbusfreight.temperature.service.SensorIngestionService;
+import com.nimbusfreight.temperature.service.TruckManagementService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,6 +64,9 @@ class AuthenticationSecurityTest {
 
     @MockitoBean
     private SensorReadingRepository readings;
+
+    @MockitoBean
+    private TruckManagementService truckManagement;
 
     @Test
     void apiRequiresAnAuthenticatedSession() throws Exception {

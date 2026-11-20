@@ -6,4 +6,5 @@ import java.util.List;
 public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long> {
     @EntityGraph(attributePaths = {"incident", "incident.truck"})
     List<AlertHistory> findAllByOrderByAlertTimeDesc();
+    void deleteAllByIncidentIn(List<com.nimbusfreight.temperature.model.Incident> incidents);
 }

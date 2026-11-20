@@ -25,6 +25,8 @@ public class SensorIngestionService {
             throw new IllegalArgumentException("Sensor timestamp is too far in the future");
         Truck truck = trucks.findById(request.truckId())
             .orElseThrow(() -> new IllegalArgumentException("Unknown truckId: " + request.truckId()));
+        if (!"ACTIVE".equals(truck.getStatus()))
+            throw new IllegalArgumentException("Telemetry cannot be accepted for an archived truck");
         // The payload lacks a sensor event ID. This deterministic key is a starter dedupe strategy.
         String key = request.truckId() + "|" + request.timestamp() + "|" + request.temperature();
         if (readings.existsByEventKey(key)) return Map.of("accepted", true, "duplicate", true, "truckId", request.truckId());

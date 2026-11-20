@@ -76,6 +76,7 @@ public class SecurityConfiguration {
         return http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(entryPoint))

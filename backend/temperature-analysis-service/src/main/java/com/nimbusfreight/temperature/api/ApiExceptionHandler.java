@@ -1,5 +1,6 @@
 package com.nimbusfreight.temperature.api;
 import org.springframework.http.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
@@ -12,5 +13,9 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<Map<String,String>> invalid(MethodArgumentNotValidException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", "Request validation failed"));
+    }
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<Map<String,String>> conflict(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "The request conflicts with existing data"));
     }
 }

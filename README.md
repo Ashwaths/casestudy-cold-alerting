@@ -17,7 +17,8 @@ Java 25 and Node.js 26.
    `MYSQL_ROOT_PASSWORD`, `APP_USERNAME`, and `APP_PASSWORD`. `APP_PASSWORD`
    must be at least 24 characters. Generate passwords with
    `openssl rand -base64 32`. Set `SERVER_NAME` to the hostname in your TLS
-   certificate. Do not commit `.env`.
+   certificate. Set `GRAFANA_ADMIN_PASSWORD` to a unique Grafana password.
+   Do not commit `.env`.
 2. Provide a TLS certificate and private key at `certs/fullchain.pem` and
    `certs/privkey.pem`. For local testing, create a self-signed certificate:
 
@@ -47,8 +48,15 @@ Java 25 and Node.js 26.
    docker compose logs -f api
    ```
 
-Flyway initializes the database and seeds the demo truck on first start. MySQL
-data is stored in the `mysql_data` volume. Stop the stack with
+Prometheus is available at `http://localhost:9090` and Grafana at
+`http://localhost:3000`. Grafana is provisioned with Prometheus as its default
+datasource and uses `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` from
+`.env`. Sensor ingestion, temperature analysis, incidents, notifications, and
+authentication are implemented within the single API module rather than as
+separate Docker Compose services.
+
+Flyway initializes the database and seeds six demo trucks on first start.
+MySQL data is stored in the `mysql_data` volume. Stop the stack with
 `docker compose down`; add `-v` only when intentionally deleting database data.
 
 Authentication uses one environment-configured operator account with BCrypt
@@ -56,6 +64,27 @@ password hashing, a secure session cookie, and CSRF protection. This is a
 single-operator case-study setup, not an enterprise identity provider or
 per-user authorization system. Never publish the API or database ports
 directly.
+
+## Fleet management and alert delivery
+
+The authenticated dashboard refreshes truck telemetry and active incidents
+every 15 seconds. Use **Add truck** and **Edit** to manage fleet details.
+**Archive** preserves telemetry and incident history while stopping new
+readings; **Activate** resumes ingestion. **Delete** permanently removes the
+truck and all related readings, incidents, and alert history after confirmation.
+
+Real devices can post JSON readings to the authenticated
+`POST /api/v1/sensors/readings` endpoint with `truckId`, `temperature`, and an
+ISO-8601 `timestamp`. The dashboard's optional simulator posts test readings
+through this same analysis path; excursion mode sends temperatures above the
+configured threshold and still observes the sustained-duration trigger.
+
+Incident notifications continue to be recorded in alert history and logs.
+Optional email delivery can be enabled with `ALERT_EMAIL_ENABLED=true` and
+configured using `ALERT_EMAIL_TO`, `ALERT_EMAIL_FROM`, and the `SMTP_*`
+settings in `.env`. Optional webhook delivery uses `ALERT_WEBHOOK_URL` and can
+send a bearer token with `ALERT_WEBHOOK_BEARER_TOKEN`. External delivery is
+disabled when these settings are omitted.
 
 ## Build and test without Docker
 
