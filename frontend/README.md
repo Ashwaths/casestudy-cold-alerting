@@ -1,13 +1,18 @@
-# Angular dashboard starter
+# Angular dashboard
 
-Create a current Angular standalone app:
+The Angular standalone dashboard requires Node.js 26. The Compose deployment
+serves it over TLS and proxies API requests through Nginx. For a local
+development build:
+
 ```bash
-npm install -g @angular/cli
-ng new nimbus-dashboard --standalone --routing --style=css
-```
-Copy `src/app` and `src/environments` into the generated app. Run:
-```bash
+npm ci
 npm start
 ```
-If `npm start` is not configured, use `ng serve`.
-Backend defaults to `http://localhost:8080`. This starter assumes local development and no authentication.
+
+```bash
+npm ci
+npm start
+```
+
+The development server proxies `/api` to `http://localhost:8080`; use the
+Compose stack for authentication and TLS integration testing.

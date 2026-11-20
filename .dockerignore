@@ -1,0 +1,13 @@
+.git
+.metadata
+.settings
+.vscode
+.classpath
+.project
+.env
+/certs
+target
+frontend/node_modules
+frontend/dist
+frontend/.angular
+bin

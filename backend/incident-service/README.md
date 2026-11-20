@@ -1,1 +1,0 @@
-incident-service service template

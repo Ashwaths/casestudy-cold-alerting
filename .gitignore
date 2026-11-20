@@ -1,0 +1,9 @@
+/bin/
+.metadata/
+**/target/
+.env
+!.env.example
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+/certs/
