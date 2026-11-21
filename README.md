@@ -97,6 +97,6 @@ npm ci
 npm run build
 ```
 
-The Java sources and tests are under
-`backend/temperature-analysis-service/src`; Flyway SQL migrations live only in
-`database/flyway`.
+The Java sources, tests, and Flyway SQL migrations are under
+`backend/temperature-analysis-service/src`; Flyway migrations are packaged from
+`src/main/resources/db/migration` by the Maven module.

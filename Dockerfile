@@ -3,7 +3,6 @@ WORKDIR /workspace
 
 COPY pom.xml ./
 COPY backend/temperature-analysis-service/pom.xml ./backend/temperature-analysis-service/pom.xml
-COPY database/flyway ./database/flyway
 RUN mvn -B -q -f backend/temperature-analysis-service/pom.xml dependency:go-offline
 
 COPY backend/temperature-analysis-service/src ./backend/temperature-analysis-service/src

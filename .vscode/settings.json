@@ -1,4 +1,8 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.mode": "full",
+    "java.import.maven.enabled": true,
+    "java.import.maven.offline.enabled": false,
+    "java.project.importOnFirstTimeStartup": "automatic"
 }

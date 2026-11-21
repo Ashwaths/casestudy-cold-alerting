@@ -17,7 +17,8 @@
 - `backend/temperature-analysis-service`: the single Spring Boot deployable,
   with API, domain services, repositories, models, and tests under `src`.
 - `frontend/src`: the Angular operations dashboard and authentication flow.
-- `database/flyway`: the canonical, versioned schema and demo seed migration.
+- `backend/temperature-analysis-service/src/main/resources/db/migration`:
+  the canonical, versioned schema and demo seed migrations packaged by the API.
 - Docker Compose starts the API and Nginx frontend. It connects to existing
   Azure resources and does not provision a local database. Only Nginx publishes
   host ports; the API and database are not published.
