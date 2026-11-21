@@ -14,5 +14,7 @@ npm ci
 npm start
 ```
 
-The development server proxies `/api` to `http://localhost:8080`; use the
-Compose stack for authentication and TLS integration testing.
+Set `API_PROXY_TARGET` to the backend URL before starting the development
+server. For a local-only backend use `http://127.0.0.1:8080`; for a remote
+backend provide its HTTPS URL. The proxy target is deliberately externalized
+and is not part of the production frontend configuration.

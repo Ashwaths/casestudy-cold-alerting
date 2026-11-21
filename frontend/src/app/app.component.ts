@@ -15,14 +15,8 @@ import { AuthService } from './core/services/auth.service';
     <section class="login-panel" *ngIf="!auth.isAuthenticated">
       <p class="eyebrow">NIMBUS FREIGHT · OPERATIONS</p>
       <h1>Sign in</h1>
-      <p class="sub">Sign in to access cold-chain monitoring.</p>
-      <form (ngSubmit)="login()">
-        <label for="username">Username</label>
-        <input id="username" name="username" [(ngModel)]="loginUsername" autocomplete="username" required>
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" [(ngModel)]="loginPassword" autocomplete="current-password" required>
-        <button type="submit" [disabled]="busy">{{busy ? 'Signing in…' : 'Sign in'}}</button>
-      </form>
+      <p class="sub">Continue with your Microsoft work account to access cold-chain monitoring.</p>
+      <button type="button" (click)="login()">Sign in with Microsoft</button>
       <p class="error" role="alert" *ngIf="loginError">{{loginError}}</p>
     </section>
     <ng-container *ngIf="auth.isAuthenticated">
@@ -117,10 +111,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private polling?: Subscription;
   private simulatorSubscription?: Subscription;
-  loginUsername = '';
-  loginPassword = '';
   loginError = '';
-  busy = false;
   savingTruck = false;
   showTruckForm = false;
   editingTruckId: string | null = null;
@@ -150,16 +141,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   login() {
-    this.busy = true;
     this.loginError = '';
-    this.auth.login(this.loginUsername, this.loginPassword).pipe(
-      finalize(() => this.busy = false)
-    ).subscribe({
-      next: () => { this.loginPassword = ''; this.startPolling(); },
-      error: error => this.loginError = error.status === 401
-        ? 'Sign-in failed. Check your username and password.'
-        : 'Sign-in service is unavailable. Try again.'
-    });
+    this.auth.login();
   }
 
   logout() {

@@ -4,8 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,28 +25,32 @@ import com.nimbusfreight.temperature.service.SensorIngestionService;
 import com.nimbusfreight.temperature.service.TruckManagementService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.security.test.context.support.WithMockUser;
 
 @WebMvcTest(
         controllers = {ApiController.class, AuthenticationController.class},
         properties = {
-                "spring.security.operator.username=test-operator",
-                "spring.security.operator.password=test-password-with-at-least-24-characters"
+                "spring.profiles.active=test",
+                "spring.security.oauth2.client.registration.azure.client-id=test-client",
+                "spring.security.oauth2.client.registration.azure.client-secret=test-secret",
+                "spring.security.oauth2.client.registration.azure.authorization-grant-type=authorization_code",
+                "spring.security.oauth2.client.registration.azure.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}",
+                "spring.security.oauth2.client.registration.azure.scope=openid,profile,email",
+                "spring.security.oauth2.client.provider.azure.authorization-uri=https://login.microsoftonline.com/test-tenant/oauth2/v2.0/authorize",
+                "spring.security.oauth2.client.provider.azure.token-uri=https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token",
+                "spring.security.oauth2.client.provider.azure.jwk-set-uri=https://login.microsoftonline.com/test-tenant/discovery/v2.0/keys",
+                "spring.security.oauth2.client.provider.azure.user-info-uri=https://graph.microsoft.com/oidc/userinfo",
+                "spring.security.oauth2.client.provider.azure.user-name-attribute=sub"
         })
 @Import(SecurityConfiguration.class)
 class AuthenticationSecurityTest {
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @MockitoBean
     private SensorIngestionService ingestion;
@@ -76,32 +81,30 @@ class AuthenticationSecurityTest {
 
     @Test
     void csrfBootstrapReturnsSessionBoundToken() throws Exception {
-        var response = mockMvc.perform(get("/api/v1/auth/csrf"))
+        mockMvc.perform(get("/api/v1/auth/csrf"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andReturn();
-        String token = objectMapper.readTree(response.getResponse().getContentAsString()).get("token").asText();
-        org.junit.jupiter.api.Assertions.assertFalse(token.isBlank());
+                .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
     @Test
-    void loginCreatesAuthenticatedSession() throws Exception {
-        AuthenticatedSession authenticated = loginWithCsrf();
-        mockMvc.perform(get("/api/v1/auth/session").session(authenticated.session()))
+    @WithMockUser(username = "operator@example.com")
+    void authenticatedSessionExposesTheIdentityName() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/session"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{\"username\":\"test-operator\"}"));
+                .andExpect(content().json("{\"username\":\"operator@example.com\"}"));
     }
 
     @Test
-    void loginRequiresCsrfToken() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login")
-                        .param("username", "test-operator")
-                        .param("password", "test-password-with-at-least-24-characters"))
-                .andExpect(status().isForbidden());
+    void oidcSessionUsesTheEntraPreferredUsernameClaim() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/session")
+                        .with(oidcLogin().idToken(token -> token.claim(
+                                "preferred_username", "operator@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"username\":\"operator@example.com\"}"));
     }
 
     @Test
-    void stateChangingRequestsRequireCsrfToken() throws Exception {
+    void protectedMutationRejectsAnonymousRequestEvenWithCsrf() throws Exception {
         mockMvc.perform(put("/api/v1/config/thresholds")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,41 +116,11 @@ class AuthenticationSecurityTest {
     void authenticatedStateChangingRequestsAcceptCsrfToken() throws Exception {
         when(configs.findById(anyString())).thenReturn(Optional.empty());
         when(configs.save(any(Configuration.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        AuthenticatedSession authenticated = loginWithCsrf();
         mockMvc.perform(put("/api/v1/config/thresholds")
-                        .session(authenticated.session())
-                        .header("X-CSRF-TOKEN", authenticated.token())
+                        .with(user("operator@example.com"))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"thresholdCelsius\":8.0}"))
                 .andExpect(status().isOk());
     }
-
-    private AuthenticatedSession loginWithCsrf() throws Exception {
-        MvcResult csrf = mockMvc.perform(get("/api/v1/auth/csrf"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String token = objectMapper.readTree(csrf.getResponse().getContentAsString()).get("token").asText();
-        MockHttpSession session = (MockHttpSession) csrf.getRequest().getSession(false);
-
-        MvcResult login = mockMvc.perform(post("/api/v1/auth/login")
-                        .session(session)
-                        .header("X-CSRF-TOKEN", token)
-                        .param("username", "test-operator")
-                        .param("password", "test-password-with-at-least-24-characters"))
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"username\":\"test-operator\"}"))
-                .andReturn();
-
-        MockHttpSession sessionAfterLogin = (MockHttpSession) login.getRequest().getSession(false);
-        MvcResult refreshedCsrf = mockMvc.perform(get("/api/v1/auth/csrf").session(sessionAfterLogin))
-                .andExpect(status().isOk())
-                .andReturn();
-        String refreshedToken = objectMapper.readTree(refreshedCsrf.getResponse().getContentAsString())
-                .get("token").asText();
-        return new AuthenticatedSession(
-                (MockHttpSession) refreshedCsrf.getRequest().getSession(false),
-                refreshedToken);
-    }
-
-    private record AuthenticatedSession(MockHttpSession session, String token) {}
 }

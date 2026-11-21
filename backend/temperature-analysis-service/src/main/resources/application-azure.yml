@@ -1,0 +1,41 @@
+spring:
+  config:
+    import: optional:azure-keyvault-secrets:
+  cloud:
+    azure:
+      profile:
+        tenant-id: ${AZURE_TENANT_ID}
+      credential:
+        # System-assigned managed identity is the default. For a user-assigned
+        # identity, provide spring.cloud.azure.credential.client-id separately.
+        # For service-principal authentication, disable managed identity and
+        # provide profile.tenant-id, credential.client-id, and credential.client-secret.
+        managed-identity-enabled: true
+      active-directory:
+        enabled: true
+        profile:
+          tenant-id: ${AZURE_TENANT_ID}
+        credential:
+          client-id: ${AZURE_CLIENT_ID}
+          # Store this Key Vault secret as AZURE-CLIENT-SECRET.
+          client-secret: ${AZURE-CLIENT-SECRET}
+          # See https://learn.microsoft.com/en-us/azure/developer/java/spring-framework/spring-security-support
+      keyvault:
+        secret:
+          endpoint: ${AZURE_KEYVAULT_URI}
+  security:
+    oauth2:
+      client:
+        registration:
+          azure:
+            provider: azure
+            client-id: ${AZURE_CLIENT_ID}
+            client-secret: ${AZURE-CLIENT-SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile,email
+        provider:
+          azure:
+            issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+# Azure Public Cloud uses the default MySQL token scope. Sovereign clouds must
+# set spring.cloud.azure.profile.cloud-type and spring.datasource.azure.scopes.

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 
 interface AuthSession {
@@ -35,19 +35,8 @@ export class AuthService {
     );
   }
 
-  login(username: string, password: string): Observable<AuthSession> {
-    const body = new URLSearchParams({ username, password }).toString();
-    const headers = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
-
-    return this.http.get<CsrfTokenResponse>('/api/v1/auth/csrf').pipe(
-      tap(token => this.csrfToken = token.token),
-      switchMap(() => this.http.post<AuthSession>('/api/v1/auth/login', body, { headers })),
-      switchMap(session => this.http.get<CsrfTokenResponse>('/api/v1/auth/csrf').pipe(
-        tap(token => this.csrfToken = token.token),
-        map(() => session)
-      )),
-      tap(session => this.currentUser = session.username)
-    );
+  login(): void {
+    window.location.assign('/oauth2/authorization/azure');
   }
 
   logout(): Observable<void> {

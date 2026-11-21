@@ -12,6 +12,13 @@
 - **Key Dependencies**: Spring Security, Spring Data JPA, Spring Mail,
   MySQL Connector/J
 
+## Build Environment
+
+- **Target JDK**: Java 25.0.5.1
+- **JDK Path**: `C:\Program Files\Microsoft\jdk-25.0.5.102-hotspot\bin`
+- **Maven Path**: `C:\Users\Ashwath Narayana\.maven\maven-3.10.1\bin`
+- **Observed Build Tool**: Maven 3.10.1
+
 ## Overview
 
 This modernization moves the selected application capabilities toward Azure

@@ -1,19 +1,21 @@
 package com.nimbusfreight.temperature.service;
 
+import com.azure.communication.email.EmailClient;
+import com.azure.communication.email.models.EmailMessage;
 import com.nimbusfreight.temperature.model.Incident;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.net.URI;
 
 @Service
 public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
-    private final JavaMailSender mailSender;
+    private final ObjectProvider<EmailClient> emailClientProvider;
     private final RestClient restClient;
     private final boolean emailEnabled;
     private final String emailTo;
@@ -21,13 +23,13 @@ public class NotificationService {
     private final String webhookUrl;
     private final String webhookBearerToken;
 
-    public NotificationService(JavaMailSender mailSender, RestClient.Builder restClientBuilder,
+    public NotificationService(ObjectProvider<EmailClient> emailClientProvider, RestClient.Builder restClientBuilder,
             @Value("${nimbus.alerts.email.enabled:false}") boolean emailEnabled,
             @Value("${nimbus.alerts.email.to:}") String emailTo,
             @Value("${nimbus.alerts.email.from:}") String emailFrom,
             @Value("${nimbus.alerts.webhook.url:}") String webhookUrl,
             @Value("${nimbus.alerts.webhook.bearer-token:}") String webhookBearerToken) {
-        this.mailSender = mailSender;
+        this.emailClientProvider = emailClientProvider;
         this.restClient = restClientBuilder.build();
         this.emailEnabled = emailEnabled;
         this.emailTo = emailTo;
@@ -52,15 +54,25 @@ public class NotificationService {
             if (!StringUtils.hasText(emailTo)) {
                 throw new IllegalStateException("ALERT_EMAIL_TO is required when email alerts are enabled");
             }
-            SimpleMailMessage email = new SimpleMailMessage();
-            if (StringUtils.hasText(emailFrom)) email.setFrom(emailFrom);
-            email.setTo(emailTo);
-            email.setSubject(subject);
-            email.setText(message);
-            mailSender.send(email);
+            if (!StringUtils.hasText(emailFrom)) {
+                throw new IllegalStateException("ALERT_EMAIL_FROM is required when email alerts are enabled");
+            }
+            EmailClient emailClient = emailClientProvider.getIfAvailable();
+            if (emailClient == null) {
+                throw new IllegalStateException("Azure Communication Services email is not configured");
+            }
+            EmailMessage email = new EmailMessage()
+                    .setSenderAddress(emailFrom)
+                    .setToRecipients(emailTo)
+                    .setSubject(subject)
+                    .setBodyPlainText(message);
+            emailClient.beginSend(email).getFinalResult();
         }
 
         if (StringUtils.hasText(webhookUrl)) {
+            if (!"https".equalsIgnoreCase(URI.create(webhookUrl).getScheme())) {
+                throw new IllegalArgumentException("ALERT_WEBHOOK_URL must use HTTPS");
+            }
             var request = restClient.post().uri(webhookUrl).body(new WebhookAlert(
                     type, incident.getIncidentId(), incident.getTruck().getTruckId(),
                     incident.getTruck().getRegistrationNumber(), incident.getStartTime(),

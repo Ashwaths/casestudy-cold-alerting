@@ -13,12 +13,15 @@ uses Angular 22.3.
 Requirements: Docker Engine with the Compose plugin. The build pipeline uses
 Java 25 and Node.js 26.
 
-1. Copy `.env.example` to `.env`. Set unique values for `MYSQL_PASSWORD`,
-   `MYSQL_ROOT_PASSWORD`, `APP_USERNAME`, and `APP_PASSWORD`. `APP_PASSWORD`
-   must be at least 24 characters. Generate passwords with
-   `openssl rand -base64 32`. Set `SERVER_NAME` to the hostname in your TLS
-   certificate. Set `GRAFANA_ADMIN_PASSWORD` to a unique Grafana password.
-   Do not commit `.env`.
+1. Copy `.env.example` to `.env` and set the Azure tenant, application/client
+   identifiers, Key Vault URI, Azure Database for MySQL hostname/database, and
+   managed-identity database principal. The database server, identity grants,
+   Key Vault, and Communication Services resource must already exist; this
+   repository does not provision Azure infrastructure. Store the Entra
+   application secret as `AZURE-CLIENT-SECRET` and any webhook bearer token as
+   `ALERT-WEBHOOK-BEARER-TOKEN` in Key Vault. Do not put secret values in `.env`.
+   Set `SERVER_NAME` to the hostname in your TLS certificate and provide the
+   Grafana administrator password through a deployment secret.
 2. Provide a TLS certificate and private key at `certs/fullchain.pem` and
    `certs/privkey.pem`. For local testing, create a self-signed certificate:
 
@@ -39,8 +42,10 @@ Java 25 and Node.js 26.
    ```
 
 4. Open `https://localhost`. HTTP traffic is redirected to HTTPS. Sign in with
-   `APP_USERNAME` and `APP_PASSWORD`; the dashboard uses a CSRF-protected
-   server session. The API and database are not published to the host.
+   Microsoft Entra ID; the dashboard uses a CSRF-protected server session. The
+   API and database are not published to the host. The API connects to the
+   configured Azure Database for MySQL instance using managed identity, without
+   a database password.
 5. Check service status and logs:
 
    ```sh
@@ -51,18 +56,14 @@ Java 25 and Node.js 26.
 Prometheus is available at `http://localhost:9090` and Grafana at
 `http://localhost:3000`. Grafana is provisioned with Prometheus as its default
 datasource and uses `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` from
-`.env`. Sensor ingestion, temperature analysis, incidents, notifications, and
+the runtime environment. Sensor ingestion, temperature analysis, incidents, notifications, and
 authentication are implemented within the single API module rather than as
 separate Docker Compose services.
 
-Flyway initializes the database and seeds six demo trucks on first start.
-MySQL data is stored in the `mysql_data` volume. Stop the stack with
-`docker compose down`; add `-v` only when intentionally deleting database data.
-
-Authentication uses one environment-configured operator account with BCrypt
-password hashing, a secure session cookie, and CSRF protection. This is a
-single-operator case-study setup, not an enterprise identity provider or
-per-user authorization system. Never publish the API or database ports
+Flyway initializes the configured Azure database and seeds six demo trucks on
+first start. Authentication uses Microsoft Entra ID, a secure session cookie,
+and CSRF protection. Authorization still requires an authenticated user; role
+mapping is not added by this migration. Never publish the API or database ports
 directly.
 
 ## Fleet management and alert delivery
@@ -81,10 +82,11 @@ configured threshold and still observes the sustained-duration trigger.
 
 Incident notifications continue to be recorded in alert history and logs.
 Optional email delivery can be enabled with `ALERT_EMAIL_ENABLED=true` and
-configured using `ALERT_EMAIL_TO`, `ALERT_EMAIL_FROM`, and the `SMTP_*`
-settings in `.env`. Optional webhook delivery uses `ALERT_WEBHOOK_URL` and can
-send a bearer token with `ALERT_WEBHOOK_BEARER_TOKEN`. External delivery is
-disabled when these settings are omitted.
+configured with `ALERT_EMAIL_TO`, `ALERT_EMAIL_FROM`, and
+`AZURE_COMMUNICATION_SERVICES_ENDPOINT`. Delivery uses the API's Azure identity.
+Optional webhook delivery uses `ALERT_WEBHOOK_URL`; its optional bearer token is
+loaded from the `ALERT-WEBHOOK-BEARER-TOKEN` Key Vault secret. External delivery
+is disabled when these settings are omitted.
 
 ## Build and test without Docker
 

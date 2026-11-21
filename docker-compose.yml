@@ -1,46 +1,22 @@
 services:
-  db:
-    image: mysql:8.4
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-nimbus_freight}
-      MYSQL_USER: ${MYSQL_USER:-nimbus}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-
   api:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-nimbus_freight}?serverTimezone=UTC
-      DB_USERNAME: ${MYSQL_USER:-nimbus}
-      DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      APP_USERNAME: ${APP_USERNAME:?Set APP_USERNAME in .env}
-      APP_PASSWORD: ${APP_PASSWORD:?Set APP_PASSWORD in .env}
-      SMTP_HOST: ${SMTP_HOST:-localhost}
-      SMTP_PORT: ${SMTP_PORT:-25}
-      SMTP_USERNAME: ${SMTP_USERNAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_AUTH: ${SMTP_AUTH:-false}
-      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      DB_HOST: ${DB_HOST:?Set DB_HOST to the Azure Database for MySQL hostname}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:?Set DB_NAME}
+      DB_USERNAME: ${DB_USERNAME:?Set DB_USERNAME to the database managed identity}
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID:?Set AZURE_TENANT_ID}
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:?Set AZURE_CLIENT_ID}
+      AZURE_KEYVAULT_URI: ${AZURE_KEYVAULT_URI:?Set AZURE_KEYVAULT_URI}
+      AZURE_COMMUNICATION_SERVICES_ENDPOINT: ${AZURE_COMMUNICATION_SERVICES_ENDPOINT:-}
       ALERT_EMAIL_ENABLED: ${ALERT_EMAIL_ENABLED:-false}
       ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
       ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-}
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
-      ALERT_WEBHOOK_BEARER_TOKEN: ${ALERT_WEBHOOK_BEARER_TOKEN:-}
       PORT: 8080
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/actuator/health"]
@@ -55,7 +31,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      SERVER_NAME: ${SERVER_NAME:-localhost}
+      SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME to the hostname in the TLS certificate}
     depends_on:
       api:
         condition: service_healthy
@@ -84,7 +60,7 @@ services:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
 
   grafana:
     image: grafana/grafana:12.2.0
@@ -100,9 +76,8 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
 
 volumes:
-  mysql_data:
   prometheus_data:
   grafana_data:
