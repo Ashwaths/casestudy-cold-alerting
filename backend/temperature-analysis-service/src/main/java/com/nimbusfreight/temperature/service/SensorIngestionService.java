@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @Service
+@SuppressWarnings("null")
 public class SensorIngestionService {
     private final TruckRepository trucks;
     private final SensorReadingRepository readings;

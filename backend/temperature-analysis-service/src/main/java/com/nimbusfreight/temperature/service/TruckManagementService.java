@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
+@SuppressWarnings("null")
 public class TruckManagementService {
     private final TruckRepository trucks;
     private final SensorReadingRepository readings;

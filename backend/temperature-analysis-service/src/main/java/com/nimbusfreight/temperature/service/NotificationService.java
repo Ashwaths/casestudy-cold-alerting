@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 
 @Service
+@SuppressWarnings("null")
 public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
     private final ObjectProvider<EmailClient> emailClientProvider;

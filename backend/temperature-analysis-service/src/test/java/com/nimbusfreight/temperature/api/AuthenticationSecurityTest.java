@@ -48,6 +48,7 @@ import org.springframework.security.test.context.support.WithMockUser;
                 "spring.security.oauth2.client.provider.azure.user-name-attribute=sub"
         })
 @Import(SecurityConfiguration.class)
+@SuppressWarnings("null")
 class AuthenticationSecurityTest {
     @Autowired
     private MockMvc mockMvc;

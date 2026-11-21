@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.client.RestClient;
 
+@SuppressWarnings({"null", "unchecked", "rawtypes"})
 class NotificationServiceTest {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})

@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.*;
 
 @Service
+@SuppressWarnings("null")
 public class TemperatureAnalysisService {
     private final SensorReadingRepository readings;
     private final IncidentRepository incidents;

@@ -12,7 +12,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 @Configuration
 public class SecurityConfiguration {
@@ -35,7 +35,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/csrf", "/oauth2/**", "/login/oauth2/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
-                        .defaultAuthenticationEntryPointFor(apiEntryPoint, new AntPathRequestMatcher("/api/**")))
+                        .defaultAuthenticationEntryPointFor(apiEntryPoint,
+                                PathPatternRequestMatcher.withDefaults().matcher("/api/**")))
                 .oauth2Login(Customizer.withDefaults())
                 .logout(logout -> logout
                         .logoutUrl("/api/v1/auth/logout")
