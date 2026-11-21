@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.azure.communication.email.EmailClient;
 import com.azure.communication.email.models.EmailMessage;
+import com.azure.communication.email.models.EmailSendResult;
 import com.azure.core.util.polling.SyncPoller;
 import com.nimbusfreight.temperature.model.Incident;
 import com.nimbusfreight.temperature.model.Truck;
@@ -15,15 +16,13 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.client.RestClient;
-
-@SuppressWarnings({"null", "unchecked", "rawtypes"})
+@SuppressWarnings("null")
 class NotificationServiceTest {
     @Test
-    @SuppressWarnings({"unchecked", "rawtypes"})
     void sendsExistingAlertContentThroughAzureCommunicationServices() {
-        ObjectProvider<EmailClient> provider = mock(ObjectProvider.class);
+        ObjectProvider<EmailClient> provider = mock();
         EmailClient emailClient = mock(EmailClient.class);
-        SyncPoller poller = mock(SyncPoller.class);
+        SyncPoller<EmailSendResult, EmailSendResult> poller = mock();
         when(provider.getIfAvailable()).thenReturn(emailClient);
         when(emailClient.beginSend(any(EmailMessage.class))).thenReturn(poller);
         NotificationService service = new NotificationService(
@@ -42,7 +41,7 @@ class NotificationServiceTest {
     @Test
     void rejectsWebhookEndpointsThatDoNotUseHttps() {
         NotificationService service = new NotificationService(
-                mock(ObjectProvider.class), RestClient.builder(), false,
+                mock(), RestClient.builder(), false,
                 "", "", "http://example.test/alerts", "");
         Incident incident = new Incident(
                 new Truck("TRUCK-1", "REG-1", "Customer"),
