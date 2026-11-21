@@ -50,3 +50,6 @@ nimbus:
       url: ${ALERT_WEBHOOK_URL:}
       # Store this Key Vault secret as ALERT-WEBHOOK-BEARER-TOKEN.
       bearer-token: ${ALERT-WEBHOOK-BEARER-TOKEN:}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
